@@ -1,4 +1,4 @@
-package com.ago.searchtest.sync.service;
+package com.ago.searchtest.sync.service.serve;
 
 
 import com.ago.searchtest.sync.model.Serve;

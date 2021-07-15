@@ -1,8 +1,10 @@
 package com.ago.searchtest;
 
 import com.ago.opensearch.client.OpenSearchHandler;
-import com.ago.searchtest.sync.service.ServeService;
-import com.alibaba.fastjson.JSONObject;
+import com.ago.opensearch.client.model.OpenSearchGetScrollParams;
+import com.ago.opensearch.client.model.OpenSearchParamInfo;
+import com.ago.opensearch.client.model.OpenSearchSearchResponse;
+import com.ago.searchtest.sync.service.serve.ServeService;
 import com.aliyun.opensearch.sdk.generated.search.Config;
 import com.aliyun.opensearch.sdk.generated.search.Order;
 import com.aliyun.opensearch.sdk.generated.search.Sort;
@@ -45,50 +47,69 @@ class SearchtestApplicationTests {
         Sort sort = new Sort();
         sort.addToSortFields(new SortField("id", Order.INCREASE));
 
-        String search = openSearchHandler.search(config, sort, "valid:'0'", "id > '0'",null ,null,null );
+        String query = "default:'平面'";
+        String filter= "id > '0'";
 
-        System.out.println(search);
+        OpenSearchParamInfo searchParamInfo = new OpenSearchParamInfo.OpenSearchParamInfoBuilder().config(config)
+                .sort(sort)
+                .filter(filter)
+                .query(query).build();
+
+        OpenSearchSearchResponse response = openSearchHandler.search(searchParamInfo);
+
+        System.out.println(response);
 
     }
 
     @Test
     public void scrollSearch(){
 
-        Config config = new Config().setHits(15);
+        Config config = new Config().setHits(2);
 
         Sort sort = new Sort();
         sort.addToSortFields(new SortField("id", Order.INCREASE));
 
         String searchId = redisTemplate.opsForValue().get("scrollId");
 
-        String search;
+        String query = "valid:'0'";
+        String filter= "id > '0'";
+
         if(StringUtils.isNotEmpty(searchId)){
 
             logger.info("cache searchId :{}",searchId);
 
-            search = openSearchHandler.search(config, sort, "valid:'0'", "id > '0'",searchId,5,null);
+            OpenSearchParamInfo openSearchParamInfo = new OpenSearchParamInfo.OpenSearchParamInfoBuilder()
+                    .config(config)
+                    .query(query)
+                    .filter(filter)
+                    .scrollId(searchId)
+                    .scrollIdExpire(3).build();
+            OpenSearchSearchResponse response = openSearchHandler.search(openSearchParamInfo);
 
-            JSONObject parse = (JSONObject) JSONObject.parse(search);
+            redisTemplate.opsForValue().set("scrollId",response.getResult().getScrollId(),3, TimeUnit.MINUTES);
 
-            JSONObject result = (JSONObject)parse.get("result");
-
-            String scrollId = (String) result.get("scroll_id");
-
-            redisTemplate.opsForValue().set("scrollId",scrollId,5, TimeUnit.MINUTES);
-
-            System.out.println("scrollId from cache : " + search);
+            System.out.println("scrollId from cache : " + response.getResult().getScrollId());
 
         }else{
 
-            String scrollId = openSearchHandler.createScrollId(config, sort, "valid:'0'", "id>'0'", null);
+            OpenSearchGetScrollParams openSearchGetScrollParams = new OpenSearchGetScrollParams(config, query, filter);
+
+            String scrollId = openSearchHandler.createScrollId(openSearchGetScrollParams);
 
             logger.info("first request scrollId :{} ", scrollId);
 
-            search = openSearchHandler.search(config, sort, "valid:'0'", "id > '0'",searchId,5,null);
+            OpenSearchParamInfo openSearchParamInfo = new OpenSearchParamInfo.OpenSearchParamInfoBuilder()
+                    .config(config)
+                    .query(query)
+                    .filter(filter)
+                    .scrollId(scrollId)
+                    .scrollIdExpire(3).build();
 
-            System.out.println("scrollId from request : " + search);
+            OpenSearchSearchResponse response = openSearchHandler.search(openSearchParamInfo);
 
-            redisTemplate.opsForValue().set("scrollId",scrollId,5, TimeUnit.MINUTES);
+            System.out.println("scrollId from request : " + response);
+
+            redisTemplate.opsForValue().set("scrollId",scrollId,3, TimeUnit.MINUTES);
         }
     }
 
@@ -100,6 +121,52 @@ class SearchtestApplicationTests {
         logger.info("scrollId : {}",scrollId);
 
         redisTemplate.delete("scrollId");
+
+    }
+
+    @Test
+    public void scrollSearchTwice(){
+
+        Config config = new Config().setHits(2);
+
+//        Sort sort = new Sort(Arrays.asList(new SortField("id",Order.INCREASE),new SortField("RANK", Order.INCREASE)));
+        Sort sort = new Sort();
+        sort.addToSortFields(new SortField("id",Order.INCREASE));
+
+        String query = "valid:'0'";
+        String filter= "id>'0'";
+
+        OpenSearchGetScrollParams openSearchGetScrollParams = new OpenSearchGetScrollParams(config, query, filter);
+
+
+        String scrollId = openSearchHandler.createScrollId(openSearchGetScrollParams);
+
+        logger.info("first scrollId : {} " , scrollId);
+
+
+        OpenSearchParamInfo openSearchParamInfo = new OpenSearchParamInfo.OpenSearchParamInfoBuilder()
+                .config(config)
+                .query(query)
+                .filter(filter)
+                .scrollId(scrollId)
+                .scrollIdExpire(3).build();
+
+        OpenSearchSearchResponse response = openSearchHandler.search(openSearchParamInfo);
+
+        logger.info("response {} ", response);
+
+        int i = 0;
+
+        while(i < 2){
+
+            openSearchParamInfo.setScrollId(response.getResult().getScrollId());
+
+            response = openSearchHandler.search(openSearchParamInfo);
+
+            logger.info("twice search {} " , response);
+
+            i++;
+        }
 
     }
 

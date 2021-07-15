@@ -1,11 +1,14 @@
-package com.ago.searchtest.sync.service;
+package com.ago.searchtest.sync.service.dept;
 
 
 import com.ago.opensearch.client.OpenSearchHandler;
 import com.ago.opensearch.client.enums.OpenSearchOperateEnum;
 import com.ago.opensearch.client.model.OpenSearchPushBody;
 import com.ago.searchtest.sync.OpenSearchClientDemoUtil;
-import com.ago.searchtest.sync.mapper.ServerMapper;
+import com.ago.searchtest.sync.mapper.DeptMapper;
+import com.ago.searchtest.sync.mapper.DeptMapper;
+import com.ago.searchtest.sync.model.Company;
+import com.ago.searchtest.sync.model.CompanyDept;
 import com.ago.searchtest.sync.model.Serve;
 import com.aliyun.opensearch.sdk.generated.commons.OpenSearchClientException;
 import com.aliyun.opensearch.sdk.generated.commons.OpenSearchException;
@@ -19,27 +22,26 @@ import org.springframework.util.CollectionUtils;
 import java.util.List;
 
 @Service
-public class ServerServiceImpl extends ServiceImpl<ServerMapper, Serve> implements ServeService{
+public class DeptServiceImpl extends ServiceImpl<DeptMapper, CompanyDept> implements DeptService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ServerServiceImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(DeptServiceImpl.class);
 
-    private final ServerMapper serverMapper;
+    private final DeptMapper DeptMapper;
 
     private final OpenSearchHandler openSearchHandler;
 
-    public ServerServiceImpl(ServerMapper serverMapper, OpenSearchHandler openSearchHandler) {
-        this.serverMapper = serverMapper;
+    public DeptServiceImpl(DeptMapper DeptMapper, OpenSearchHandler openSearchHandler) {
+        this.DeptMapper = DeptMapper;
         this.openSearchHandler = openSearchHandler;
     }
 
-
     public void syncDataToOpenSearch(){
 
-        List<Serve> serves = serverMapper.selectList(new QueryWrapper<Serve>());
+        List<CompanyDept> dept = DeptMapper.selectList(new QueryWrapper<CompanyDept>());
 
-        if(!CollectionUtils.isEmpty(serves)){
+        if(!CollectionUtils.isEmpty(dept)){
 
-            serves.stream().forEach( x -> {
+            dept.stream().forEach( x -> {
 
                 logger.info("current data info , {} " , x.toString());
                 try {
