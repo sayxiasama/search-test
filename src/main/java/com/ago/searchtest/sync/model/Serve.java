@@ -1,7 +1,7 @@
 package com.ago.searchtest.sync.model;
 
 
-import com.ago.opensearch.client.OpenSearchModel;
+import com.ago.opensearch.client.model.OpenSearchModel;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;

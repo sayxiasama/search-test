@@ -1,14 +1,11 @@
 package com.ago.searchtest;
 
-import com.ago.opensearch.client.OpenSearchHandler;
-import com.ago.opensearch.client.model.OpenSearchGetScrollParams;
-import com.ago.opensearch.client.model.OpenSearchParamInfo;
-import com.ago.opensearch.client.model.OpenSearchSearchResponse;
+import com.ago.opensearch.client.handler.OpenSearchHandler;
+import com.ago.opensearch.client.model.request.OpenSearchParamInfo;
+import com.ago.opensearch.client.model.request.ScrollSearchParams;
+import com.ago.opensearch.client.model.response.OpenSearchSearchResponse;
 import com.ago.searchtest.sync.service.serve.ServeService;
-import com.aliyun.opensearch.sdk.generated.search.Config;
-import com.aliyun.opensearch.sdk.generated.search.Order;
-import com.aliyun.opensearch.sdk.generated.search.Sort;
-import com.aliyun.opensearch.sdk.generated.search.SortField;
+import com.aliyun.opensearch.sdk.generated.search.*;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -31,7 +28,7 @@ class SearchtestApplicationTests {
     void contextLoads() {
     }
     @Autowired
-    private  OpenSearchHandler openSearchHandler;
+    private OpenSearchHandler openSearchHandler;
 
     @Autowired
     private ServeService serveService;
@@ -47,13 +44,45 @@ class SearchtestApplicationTests {
         Sort sort = new Sort();
         sort.addToSortFields(new SortField("id", Order.INCREASE));
 
-        String query = "default:'平面'";
+        String query = "default:'人'";
         String filter= "id > '0'";
+        String queryOriginalContent ="人";
 
-        OpenSearchParamInfo searchParamInfo = new OpenSearchParamInfo.OpenSearchParamInfoBuilder().config(config)
+        OpenSearchParamInfo searchParamInfo = OpenSearchParamInfo.builder().config(config)
                 .sort(sort)
                 .filter(filter)
-                .query(query).build();
+                .query(query)
+                .originalQueryContent(queryOriginalContent)
+                .build();
+
+        Distinct distinct = new Distinct();
+        distinct.setKey("dept_name"); //设置dist_key
+        distinct.setDistCount(1); //设置dist_count
+        distinct.setDistTimes(1); //设置dist_times
+        distinct.setReserved(false); //设置reserved
+        distinct.setUpdateTotalHit(false); //设置update_total_hit
+        distinct.setDistFilter("id<0"); //设置过滤条件
+        distinct.setGrade("1.2"); //设置grade
+
+        searchParamInfo.setDistinct(distinct);
+
+        Aggregate agg = new Aggregate();
+        agg.setGroupKey("id"); //设置group_key
+        agg.setAggFun("count()"); //设置agg_fun
+        agg.setAggFilter("id=1"); //设置agg_filter
+        agg.setRange("0~10"); //设置分段统计
+        agg.setAggSamplerThresHold("5"); //设置采样阈值
+        agg.setAggSamplerStep("5"); //设置采样步长
+        agg.setMaxGroup("5"); //设置最大返回组数
+
+        Summary summary = new Summary("dept_name");
+
+        summary.setSummary_len("50");//片段长度
+        summary.setSummary_element("em"); //飘红标签
+        summary.setSummary_ellipsis("...");//片段链接符
+        summary.setSummary_snippet("1");//片段数量
+
+        searchParamInfo.setSummary(summary);
 
         OpenSearchSearchResponse response = openSearchHandler.search(searchParamInfo);
 
@@ -78,7 +107,7 @@ class SearchtestApplicationTests {
 
             logger.info("cache searchId :{}",searchId);
 
-            OpenSearchParamInfo openSearchParamInfo = new OpenSearchParamInfo.OpenSearchParamInfoBuilder()
+            OpenSearchParamInfo openSearchParamInfo =  OpenSearchParamInfo.builder()
                     .config(config)
                     .query(query)
                     .filter(filter)
@@ -92,13 +121,13 @@ class SearchtestApplicationTests {
 
         }else{
 
-            OpenSearchGetScrollParams openSearchGetScrollParams = new OpenSearchGetScrollParams(config, query, filter);
+           ScrollSearchParams openSearchGetScrollParams = new ScrollSearchParams(config, query, filter);
 
             String scrollId = openSearchHandler.createScrollId(openSearchGetScrollParams);
 
             logger.info("first request scrollId :{} ", scrollId);
 
-            OpenSearchParamInfo openSearchParamInfo = new OpenSearchParamInfo.OpenSearchParamInfoBuilder()
+            OpenSearchParamInfo openSearchParamInfo =  OpenSearchParamInfo.builder()
                     .config(config)
                     .query(query)
                     .filter(filter)
@@ -136,7 +165,7 @@ class SearchtestApplicationTests {
         String query = "valid:'0'";
         String filter= "id>'0'";
 
-        OpenSearchGetScrollParams openSearchGetScrollParams = new OpenSearchGetScrollParams(config, query, filter);
+        ScrollSearchParams openSearchGetScrollParams = new ScrollSearchParams(config, query, filter);
 
 
         String scrollId = openSearchHandler.createScrollId(openSearchGetScrollParams);
@@ -144,7 +173,7 @@ class SearchtestApplicationTests {
         logger.info("first scrollId : {} " , scrollId);
 
 
-        OpenSearchParamInfo openSearchParamInfo = new OpenSearchParamInfo.OpenSearchParamInfoBuilder()
+        OpenSearchParamInfo openSearchParamInfo =  OpenSearchParamInfo.builder()
                 .config(config)
                 .query(query)
                 .filter(filter)

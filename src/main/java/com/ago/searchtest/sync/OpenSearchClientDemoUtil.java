@@ -1,6 +1,6 @@
 package com.ago.searchtest.sync;
 
-import com.ago.opensearch.client.OpenSearchModel;
+import com.ago.opensearch.client.model.OpenSearchModel;
 import com.ago.searchtest.sync.model.Serve;
 import com.alibaba.fastjson.JSONObject;
 import com.aliyun.opensearch.DocumentClient;

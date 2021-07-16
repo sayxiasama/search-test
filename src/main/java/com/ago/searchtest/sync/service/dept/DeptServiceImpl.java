@@ -1,9 +1,9 @@
 package com.ago.searchtest.sync.service.dept;
 
 
-import com.ago.opensearch.client.OpenSearchHandler;
 import com.ago.opensearch.client.enums.OpenSearchOperateEnum;
-import com.ago.opensearch.client.model.OpenSearchPushBody;
+import com.ago.opensearch.client.handler.OpenSearchHandler;
+import com.ago.opensearch.client.model.request.OpenSearchPushBody;
 import com.ago.searchtest.sync.OpenSearchClientDemoUtil;
 import com.ago.searchtest.sync.mapper.DeptMapper;
 import com.ago.searchtest.sync.mapper.DeptMapper;
